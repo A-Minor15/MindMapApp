@@ -58,9 +58,9 @@ export default function MindMapNode({ id, data }: any) {
       )}
 
       {/* React Flowの接続ハンドル */}
-      {/* source: 下、target: 上に配置 */}
-      <Handle type="source" position={Position.Bottom} />
-      <Handle type="target" position={Position.Top} />
+      {/* source: 左、target: 右に配置 */}
+      <Handle type="source" position={Position.Left} />
+      <Handle type="target" position={Position.Right} />
     </div>
   );
 };
