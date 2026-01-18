@@ -64,6 +64,13 @@ export default function MindMapNode({ id, data }: any) {
       onMouseMove={onMouseMove}
       // マウスを離したらドラッグ終了
       onMouseUp={onMouseUp}
+      tabIndex={0}
+      // デリートキーで削除
+      onKeyDown={(e) => {
+        if (e.key === 'Delete') {
+          data.onDelete(id)
+        }
+      }}
     >
       <div
         className="node_label"

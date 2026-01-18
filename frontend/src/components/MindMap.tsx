@@ -54,12 +54,19 @@ export default function MindMap() {
           label: '', // 新規は空ラベル（ユーザーが編集）
           onChange: updateNodeLabel,
           onAddChild: addChildNode,
+          onDelete: deleteNode,
         },
       };
       return [...nds, newNode];
     });
     setEdges((eds) => [...eds, { id: `${parentId}-${newId}`, source: parentId, target: newId }]);
   }
+
+  // ラベルを削除する関数
+  const deleteNode = (id: string) => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
 
   // 初回マウント時にサーバーからマインドマップを取得してstateにセットする
   useEffect(() => {
@@ -79,7 +86,12 @@ export default function MindMap() {
           // サーバーから来たノードにも操作用コールバックを注入する
           const injectedNodes = (data.nodes || []).map((n: any) => ({
             ...n,
-            data: { ...(n.data || {}), onChange: updateNodeLabel, onAddChild: addChildNode }
+            data: {
+              ...(n.data || {}),
+              onChange: updateNodeLabel,
+              onAddChild: addChildNode,
+              onDelete: deleteNode,
+            }
           }));
           setNodes(injectedNodes);
           setEdges(data.edges || []);
@@ -107,6 +119,7 @@ export default function MindMap() {
         label: '新しいノード',
         onChange: updateNodeLabel,
         onAddChild: addChildNode,
+        onDelete: deleteNode,
       },
     };
 
