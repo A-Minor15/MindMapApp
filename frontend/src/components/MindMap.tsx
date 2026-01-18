@@ -3,19 +3,27 @@ import ReactFlow, {
   Background,
   Controls,
   addEdge,
+  useEdgesState,
+  useNodesState,
 } from 'reactflow';
 import type { Node, Edge, Connection } from 'reactflow';
 import MindMapNode from './MindMapNode';
 import 'reactflow/dist/style.css';
 import './MindMap.css';
 
+// .envファイルからAPI取得
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 // カスタムノードの種類を登録
-// ここでは、'mindmap'がMindMapNodeコンポーネントに対応
+// 'mindmap'がMindMapNodeコンポーネントに対応
 const nodeTypes = {
   mindmap: MindMapNode,
 }
 
 export default function MindMap() {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
   // ノードのラベルを更新するヘルパー関数
   // idに一致するノードのdata.labelを差し替える
   const updateNodeLabel = (id: string, label: string) => {
@@ -53,29 +61,19 @@ export default function MindMap() {
     setEdges((eds) => [...eds, { id: `${parentId}-${newId}`, source: parentId, target: newId }]);
   }
 
-  // nodes / edges の state
-  // 初期ノードは中心テーマを表す簡単な例
-  const [nodes, setNodes] = useState<Node[]>([
-    {
-      id: '1',
-      type: 'mindmap',
-      position: { x: 250, y: 100 },
-      data: {
-        label: '中心テーマ',
-        onChange: updateNodeLabel, // ノード内からラベル更新を呼べるように渡す
-        onAddChild: addChildNode,
-      },
-    },
-  ]);
-
-  const [edges, setEdges] = useState<Edge[]>([]);
-
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-
   // 初回マウント時にサーバーからマインドマップを取得してstateにセットする
   useEffect(() => {
     fetch(`${API_BASE}/mindmap`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const text = await res.text();
+
+        // 何も保存されていない初回起動時
+        if (!text) {
+          return null;
+        }
+
+        return JSON.parse(text);
+      })
       .then((data) => {
         if (data) {
           // サーバーから来たノードにも操作用コールバックを注入する
@@ -141,6 +139,8 @@ export default function MindMap() {
           edges={edges}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
         >
           <Background />
           <Controls />

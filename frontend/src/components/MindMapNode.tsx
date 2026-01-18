@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import './MindMapNode.css';
 
@@ -10,6 +10,16 @@ export default function MindMapNode({ id, data }: any) {
   // 入力中のテキスト（ラベル）
   const [value, setValue] = useState(data.label);
 
+  // ラベルの表示位置（ノード内でのオフセット）
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  // 今ドラッグ中かどうかを保持するフラグ
+  // useRefを使うことで、再レンダリングせずに状態を保持できる
+  const dragging = useRef(false);
+
+  // ドラッグ開始時のマウス位置を保持
+  const start = useRef({ x: 0, y: 0 });
+
   // 編集を終える処理
   // 編集状態を解除して、親コンポーネントへラベル更新を伝える
   const finishEdit = () => {
@@ -17,45 +27,88 @@ export default function MindMapNode({ id, data }: any) {
     data.onChange(id, value);
   }
 
+  // ラベルを押した瞬間（ドラッグ開始）
+  const onMouseDown = (e: React.MouseEvent) => {
+    // ReactFlowの「ノード移動」が発火するのを防ぐ
+    e.stopPropagation();
+
+    dragging.current = true;
+
+    // 現在のマウス位置とラベル位置の差分を保存
+    // これにより、ドラッグ中もずれずに追従する
+    start.current = {
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y,
+    };
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging.current) return;
+
+    // マウス位置から開始時の差分を引いて、新しい座標を計算
+    setPos({
+      x: e.clientX - start.current.x,
+      y: e.clientY - start.current.y,
+    });
+  };
+
+  // マウスを離したらドラッグ終了
+  const onMouseUp = () => {
+    dragging.current = false;
+  };
+
   return (
     <div
       className="mindmap-node"
-      // ダブルクリックで編集モードに入る
-      onDoubleClick={() => setEditing(true)}
+      // ノード内でマウスを動かしたら座標更新
+      onMouseMove={onMouseMove}
+      // マウスを離したらドラッグ終了
+      onMouseUp={onMouseUp}
     >
-      {editing ? (
-        // 編集中はinputを表示
-        <input
-          className="node-input"
-          value={value}
-          autoFocus
-          // 入力をstateに反映
-          onChange={(e) => setValue(e.target.value)}
-          // フォーカスが外れたら編集確定
-          onBlur={finishEdit}
-          // Enterキーで編集確定
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') finishEdit();
-          }}
-        />
-      ) : (
-        // 通常時はラベルと「＋」ボタンを表示
-        <div className="node-label-with-add">
-          <span>{data.label}</span>
-          {/* ラベルの周りに配置する + ボタン */}
-          {/* クリックで親ノードに接続された新規ノードを追加する */}
-          <button
-            className="add-child-button"
-            onClick={(e) => {
-              e.stopPropagation(); // ノード選択やドラッグと干渉しないようにする
-              if (data.onAddChild) data.onAddChild(id);
+      <div
+        className="node_label"
+        // ラベルの表示位置をtransformで反映
+        style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+        // ラベルを押したらドラッグ開始
+        onMouseDown={onMouseDown}
+        // ダブルクリックで編集モードに入る
+        onDoubleClick={() => setEditing(true)}
+      >
+        {editing ? (
+          // 編集中はinputを表示
+          <input
+            className="node-input"
+            value={value}
+            autoFocus
+            // 入力をstateに反映
+            onChange={(e) => setValue(e.target.value)}
+            // フォーカスが外れたら編集確定
+            onBlur={finishEdit}
+            // Enterキーで編集確定
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') finishEdit();
             }}
-            aria-label="Add child node"
-          >
-            +
-          </button>
-        </div>
-      )}
+          />
+        ) : (
+          // 通常時はラベルと「＋」ボタンを表示
+          <div className="node-label-with-add">
+            <span>{data.label}</span>
+            {/* ラベルの周りに配置する + ボタン */}
+            {/* クリックで親ノードに接続された新規ノードを追加する */}
+            <button
+              className="add-child-button"
+              onClick={(e) => {
+                e.stopPropagation(); // ノード選択やドラッグと干渉しないようにする
+                if (data.onAddChild) data.onAddChild(id);
+              }}
+              aria-label="Add child node"
+            >
+              +
+            </button>
+          </div>
+        )}
+      </div>
+
 
       {/* React Flowの接続ハンドル */}
       {/* source: 左、target: 右に配置 */}
