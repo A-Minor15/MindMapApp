@@ -70,10 +70,11 @@ export default function MindMap() {
 
   const [edges, setEdges] = useState<Edge[]>([]);
 
+  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+
   // 初回マウント時にサーバーからマインドマップを取得してstateにセットする
-  // backendがhttp://localhost:3000/mindmapを提供している前提
   useEffect(() => {
-    fetch('http://localhost:3000/mindmap')
+    fetch(`${API_BASE}/mindmap`)
       .then((res) => res.json())
       .then((data) => {
         if (data) {

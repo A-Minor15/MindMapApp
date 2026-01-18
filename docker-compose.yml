@@ -1,0 +1,24 @@
+# docker-composeのファイル形式のバージョン
+version: "3.9"
+
+services:
+  # サービス名
+  # docker内部ネットワークでのホスト名となる
+  backend:
+    # ./backend/Dockerfileを指定
+    # docker build ./backendをcomposeが代行
+    build: ./backend
+    # 実際に作成されるコンテナ名
+    container_name: mindmap-backend
+    # "ホストPCのポート:コンテナ内のポート"
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./frontend
+    container_name: mindmap-frontend
+    ports:
+      - "5173:5173"
+    # backendが起動してから立ち上げる
+    depends_on:
+      - backend
